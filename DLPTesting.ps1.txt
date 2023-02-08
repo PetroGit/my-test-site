@@ -1,0 +1,68 @@
+<#
+.SYNOPSIS
+  Base checker of Windows configuration
+.DESCRIPTION
+  Checking the system configuration, who is logged in, installed applications, processes, local users and groups
+.OUTPUTS
+  All config results stored in output.txt - check the default path
+.NOTES
+  Version:        1.1
+  Author:         Wojciech Kamieniecki and Pedro Navarro
+  Creation Date:  29.09.2020
+  Purpose/Change: Initial script development
+  
+#>
+
+
+
+"==== SYSINFO command ====" >> output.txt
+systeminfo >> output.txt
+"==== Check DLP BitLocker Drive Encryption Status ====" >> output.txt
+Get-BitLockerVolume >> output.txt
+"==== Check DLP if Secure Boot is enabled ====" >> output.txt
+Get-BitLockerVolume >> output.txt
+"==== Check DLP bluethooth status ====" >> output.txt
+(Get-NetAdapter | Select-Object -Property *) -match 'bluetooth' >> output.txt
+"`n==== NET CONFIG WORKSTATION command ====" >> output.txt
+net config workstation >> output.txt
+
+"`n==== NET CONFIG SERVER command ====" >> output.txt
+net config server >> output.txt
+
+"`n==== WHO IS LOGGED IN ====" >> output.txt
+query user
+
+"`n==== INSTALLED APPLICATIONS command ====" >> output.txt
+Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Format-Table -AutoSize >> output.txt
+
+"`n==== GET PROCESSES command ====" >> output.txt
+$owners = @{}
+gwmi win32_process | ForEach-Object {$owners[$_.handle] = $_.getowner().user}
+$processes =  get-process | Sort-object -Property name -Unique 
+$processes | Select processname,Id,@{l="Owner";e={$owners[$_.id.tostring()]}}
+
+
+"`n==== GET-LOCALUSER command ====" >> output.txt
+get-localuser >> output.txt
+
+"`n==== GET-LOCALGROUP command ====" >> output.txt
+$Groups = get-localgroup
+get-localgroup >> output.txt
+
+
+"`n==== GET-LOCALGROUPMEMBER command ====" >> output.txt
+foreach ($Group in $Groups)
+{
+    "`n===$Nested entities in $Group :" >> output.txt
+     Get-LocalGroupMember -Group $Group -Verbose >> output.txt
+     $NestedGroups = Get-LocalGroupMember -Group $Group
+     foreach ($NestedGroup in $NestedGroups)
+     {
+         if($NestedGroup.ObjectClass -eq "Group" -and $NestedGroup.PrincipalSource -eq "ActiveDirectory" -and $NestedGroup.Name -notmatch "Domain Users")
+         {
+            "`n===$Nested entities in $NestedGroup :" >> output.txt
+            Get-ADGroupMember -identity $NestedGroup.ToString().replace("AD\","") -Recursive | select Name, SAMAccountName >> output.txt
+         }
+     }
+}
+

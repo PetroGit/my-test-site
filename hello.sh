@@ -1,5 +1,5 @@
-#!/usr/bin/bsh
+#!/bin/sh
 
-# Hello world script program
+# This is a comment!
 
-print "Hello World!";
+echo Hello World        # This is a comment, too!
