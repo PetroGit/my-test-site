@@ -1,0 +1,2 @@
+start /d "C:\Program Files (x86)\Microsoft\Edge\Application\" msedge.exe https://github.com/PetroGit/my-test-site/blob/main/hello.jar
+start /d "C:\Program Files (x86)\Microsoft\Edge\Application\" msedge.exe https://king-prawn-app-zrsud.ondigitalocean.app/
